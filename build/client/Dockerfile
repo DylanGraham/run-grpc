@@ -14,7 +14,7 @@ RUN go mod download
 # Copy local code to the container image.
 COPY cmd/${service}/. ./
 
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -mod=readonly -ldflags="-w -s" -o ${service} .
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-w -s" -o ${service} .
 
 FROM alpine:3.12
 
