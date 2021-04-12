@@ -1,0 +1,9 @@
+syntax = "proto3";
+package pb;
+option go_package = "github.com/DylanGraham/run-grpc/pb";
+// import "google/protobuf/wrappers.proto";
+
+service Run { rpc Hello(HelloRequest) returns (HelloResponse); }
+
+message HelloRequest { string name = 1; }
+message HelloResponse { string msg = 1; }
