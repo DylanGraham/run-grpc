@@ -13,7 +13,7 @@ RUN go mod download
 COPY cmd/server/. ./
 COPY pb ./pb
 
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-w -s" -o server .
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -mod=readonly -ldflags="-w -s" -o server .
 
 FROM alpine:3.12
 
