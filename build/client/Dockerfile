@@ -17,11 +17,11 @@ COPY pb ./pb
 
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -mod=readonly -ldflags="-w -s" -o ${service} .
 
-FROM alpine:3.12
+FROM alpine:3.13
 
 RUN apk --no-cache add ca-certificates && \
     rm -rf /var/cache/apk/*
 
 COPY --from=builder /app/${service} /app/${service}
 
-ENTRYPOINT  ["/app/${service}"]
+ENTRYPOINT ["/app/client"]
