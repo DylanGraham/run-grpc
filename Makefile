@@ -11,7 +11,9 @@ client:
 	go build -ldflags="-s -w" -o client cmd/client/*.go
 
 pb:
-	protoc pb/run.proto --go_opt=paths=source_relative --go_out=plugins=grpc:.
+	protoc --go_out=. --go_opt=paths=source_relative \
+	    --go-grpc_out=. --go-grpc_opt=paths=source_relative \
+	    pb/run.proto
 
 clean:
 	rm -f client server

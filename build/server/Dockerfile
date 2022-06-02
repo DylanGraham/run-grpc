@@ -1,4 +1,4 @@
-FROM golang:1.16-buster as builder
+FROM golang:1.18-buster as builder
 
 ARG service=server
 
@@ -17,7 +17,7 @@ COPY pb ./pb
 
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -mod=readonly -ldflags="-w -s" -o ${service} .
 
-FROM alpine:3.13
+FROM alpine:3.16
 
 RUN apk --no-cache add ca-certificates && \
     rm -rf /var/cache/apk/*
