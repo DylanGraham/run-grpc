@@ -4,9 +4,11 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"time"
 
 	"github.com/DylanGraham/run-grpc/pb"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 type grpcContext struct {
@@ -21,7 +23,7 @@ func main() {
 
 	gc := grpcContext{}
 	var err error
-	gc.conn, err = grpc.Dial(":8080", grpc.WithInsecure())
+	gc.conn, err = grpc.Dial(":8081", grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Fatalf("could not connect to backend: %v", err)
 	}
@@ -29,14 +31,17 @@ func main() {
 
 	gc.client = pb.NewRunClient(gc.conn)
 
-	msg := pb.HelloRequest{
-		Name: "Dylan",
-	}
-
-	resp, err := gc.client.Hello(ctx, &msg)
+	stream, err := gc.client.Chat(ctx)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	fmt.Printf("Response: %v\n", resp.Msg)
+	for {
+		note, err := stream.Recv()
+		if err != nil {
+			fmt.Println(err)
+		}
+		fmt.Printf("Response: %s\n", note.Msg)
+		time.Sleep(5 * time.Second)
+	}
 }

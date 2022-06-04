@@ -22,7 +22,7 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type RunClient interface {
-	Hello(ctx context.Context, in *HelloRequest, opts ...grpc.CallOption) (*HelloResponse, error)
+	Chat(ctx context.Context, opts ...grpc.CallOption) (Run_ChatClient, error)
 }
 
 type runClient struct {
@@ -33,20 +33,42 @@ func NewRunClient(cc grpc.ClientConnInterface) RunClient {
 	return &runClient{cc}
 }
 
-func (c *runClient) Hello(ctx context.Context, in *HelloRequest, opts ...grpc.CallOption) (*HelloResponse, error) {
-	out := new(HelloResponse)
-	err := c.cc.Invoke(ctx, "/pb.Run/Hello", in, out, opts...)
+func (c *runClient) Chat(ctx context.Context, opts ...grpc.CallOption) (Run_ChatClient, error) {
+	stream, err := c.cc.NewStream(ctx, &Run_ServiceDesc.Streams[0], "/pb.Run/Chat", opts...)
 	if err != nil {
 		return nil, err
 	}
-	return out, nil
+	x := &runChatClient{stream}
+	return x, nil
+}
+
+type Run_ChatClient interface {
+	Send(*ChatNote) error
+	Recv() (*ChatNote, error)
+	grpc.ClientStream
+}
+
+type runChatClient struct {
+	grpc.ClientStream
+}
+
+func (x *runChatClient) Send(m *ChatNote) error {
+	return x.ClientStream.SendMsg(m)
+}
+
+func (x *runChatClient) Recv() (*ChatNote, error) {
+	m := new(ChatNote)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
 }
 
 // RunServer is the server API for Run service.
 // All implementations must embed UnimplementedRunServer
 // for forward compatibility
 type RunServer interface {
-	Hello(context.Context, *HelloRequest) (*HelloResponse, error)
+	Chat(Run_ChatServer) error
 	mustEmbedUnimplementedRunServer()
 }
 
@@ -54,8 +76,8 @@ type RunServer interface {
 type UnimplementedRunServer struct {
 }
 
-func (UnimplementedRunServer) Hello(context.Context, *HelloRequest) (*HelloResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Hello not implemented")
+func (UnimplementedRunServer) Chat(Run_ChatServer) error {
+	return status.Errorf(codes.Unimplemented, "method Chat not implemented")
 }
 func (UnimplementedRunServer) mustEmbedUnimplementedRunServer() {}
 
@@ -70,22 +92,30 @@ func RegisterRunServer(s grpc.ServiceRegistrar, srv RunServer) {
 	s.RegisterService(&Run_ServiceDesc, srv)
 }
 
-func _Run_Hello_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(HelloRequest)
-	if err := dec(in); err != nil {
+func _Run_Chat_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(RunServer).Chat(&runChatServer{stream})
+}
+
+type Run_ChatServer interface {
+	Send(*ChatNote) error
+	Recv() (*ChatNote, error)
+	grpc.ServerStream
+}
+
+type runChatServer struct {
+	grpc.ServerStream
+}
+
+func (x *runChatServer) Send(m *ChatNote) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+func (x *runChatServer) Recv() (*ChatNote, error) {
+	m := new(ChatNote)
+	if err := x.ServerStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
-	if interceptor == nil {
-		return srv.(RunServer).Hello(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/pb.Run/Hello",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(RunServer).Hello(ctx, req.(*HelloRequest))
-	}
-	return interceptor(ctx, in, info, handler)
+	return m, nil
 }
 
 // Run_ServiceDesc is the grpc.ServiceDesc for Run service.
@@ -94,12 +124,14 @@ func _Run_Hello_Handler(srv interface{}, ctx context.Context, dec func(interface
 var Run_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "pb.Run",
 	HandlerType: (*RunServer)(nil),
-	Methods: []grpc.MethodDesc{
+	Methods:     []grpc.MethodDesc{},
+	Streams: []grpc.StreamDesc{
 		{
-			MethodName: "Hello",
-			Handler:    _Run_Hello_Handler,
+			StreamName:    "Chat",
+			Handler:       _Run_Chat_Handler,
+			ServerStreams: true,
+			ClientStreams: true,
 		},
 	},
-	Streams:  []grpc.StreamDesc{},
 	Metadata: "pb/run.proto",
 }
